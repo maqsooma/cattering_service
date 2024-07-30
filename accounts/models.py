@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.utils import timezone
 import secrets
 import string
+from django.conf import settings
 
 
 class CustomUserManager(BaseUserManager):
@@ -81,3 +82,18 @@ class CustomUser(AbstractBaseUser):
         self.verification_token = token
         # Set verification expiration time to 2 hours from now
         self.verification_expires_at = timezone.now() + timezone.timedelta(minutes=2)
+
+
+class ChangePassword(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    verification_token = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    verification_expires_at = models.DateTimeField(null=True, blank=True)
+
+    def generate_verification_token(self):
+        import secrets
+        import string
+
+        token = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(64))
+        self.verification_token = token
+        self.verification_expires_at = timezone.now() + timezone.timedelta(hours=2)
+        self.save()
